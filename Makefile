@@ -1,4 +1,4 @@
-# 
+#
 # Makefile template for out of tree kernel modules
 #
 
@@ -14,9 +14,12 @@ KERNEL_BUILD:=$(PROOT)/build/$(LINUX_KERNEL)
 LOCALPWD=$(shell pwd)
 obj-m += xlnx-axi-dma-zio.o
 
+# Include ZIO headers
+ccflags-y := -I$(LOCALPWD)/zio/include
+
 all: build modules install
 
-build:modules
+build: modules
 
 .PHONY: build clean modules
 
@@ -29,7 +32,7 @@ modules:
 		echo "ERROR: Please build kernel with petalinux-build -c kernel first."; \
 		exit 255; \
 	else \
-		make INSTANCE=$(LINUX_KERNEL) -C $(KERNEL_BUILD) M=$(LOCALPWD) modules_only; \
+		make INSTANCE=$(LINUX_KERNEL) -C $(KERNEL_BUILD) M=$(LOCALPWD) ccflags-y=$(ccflags-y) modules_only; \
 	fi
 
 install: $(addprefix $(DIR),$(subst .o,.ko,$(obj-m)))

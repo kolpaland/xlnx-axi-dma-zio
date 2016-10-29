@@ -6,6 +6,7 @@
 #include <linux/slab.h>
 #include <linux/io.h>
 #include <linux/interrupt.h>
+#include <linux/zio.h>
 
 #include <linux/of_address.h>
 #include <linux/of_device.h>
