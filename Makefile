@@ -14,8 +14,16 @@ KERNEL_BUILD:=$(PROOT)/build/$(LINUX_KERNEL)
 LOCALPWD=$(shell pwd)
 obj-m += xlnx-axi-dma-zio.o
 
-# Include ZIO headers
-ccflags-y := -I$(LOCALPWD)/zio/include
+ZIO_ABS=$(LOCALPWD)/zio
+export ZIO_ABS
+
+GIT_VERSION = $(shell git describe --always --dirty --long --tags)
+ZIO_GIT_VERSION = $(shell cd $(ZIO_ABS); git describe --always --dirty --long --tags)
+ZIO_VERSION := -D__ZIO_MAJOR_VERSION=$(shell echo $(ZIO_GIT_VERSION) | cut -d '-' -f 2 | cut -d '.' -f 1; )
+ZIO_VERSION += -D__ZIO_MINOR_VERSION=$(shell echo $(ZIO_GIT_VERSION) | cut -d '-' -f 2 | cut -d '.' -f 2; )
+ZIO_VERSION += -D__ZIO_PATCH_VERSION=$(shell echo $(ZIO_GIT_VERSION) | cut -d '-' -f 3)
+export GIT_VERSION
+export ZIO_VERSION
 
 all: build modules install
 
@@ -24,6 +32,7 @@ build: modules
 .PHONY: build clean modules
 
 clean:
+	make INSTANCE=$(LINUX_KERNEL) -C $(KERNEL_BUILD) M=$(ZIO_ABS) clean
 	make INSTANCE=$(LINUX_KERNEL) -C $(KERNEL_BUILD) M=$(LOCALPWD) clean
 
 modules:
@@ -32,7 +41,8 @@ modules:
 		echo "ERROR: Please build kernel with petalinux-build -c kernel first."; \
 		exit 255; \
 	else \
-		make INSTANCE=$(LINUX_KERNEL) -C $(KERNEL_BUILD) M=$(LOCALPWD) ccflags-y=$(ccflags-y) modules_only; \
+		make INSTANCE=$(LINUX_KERNEL) -C $(KERNEL_BUILD) M=$(ZIO_ABS) modules_only; \
+		make INSTANCE=$(LINUX_KERNEL) -C $(KERNEL_BUILD) M=$(LOCALPWD) modules_only; \
 	fi
 
 install: $(addprefix $(DIR),$(subst .o,.ko,$(obj-m)))
@@ -41,6 +51,7 @@ install: $(addprefix $(DIR),$(subst .o,.ko,$(obj-m)))
 		echo "ERROR: Please build kernel with petalinux-build -c kernel first."; \
 		exit 255; \
 	else \
+		make INSTANCE=$(LINUX_KERNEL) -C $(KERNEL_BUILD) M=$(ZIO_ABS) INSTALL_MOD_PATH=$(TARGETDIR) modules_install_only; \
 		make INSTANCE=$(LINUX_KERNEL) -C $(KERNEL_BUILD) M=$(LOCALPWD) INSTALL_MOD_PATH=$(TARGETDIR) modules_install_only; \
 	fi
 
